@@ -12,10 +12,10 @@ ARGUMENTS
 parser = argparse.ArgumentParser(description='AI models')
 
 # data paths
-parser.add_argument("--train_path", type=str, default='.data/train.txt', help="Train data path")
-parser.add_argument("--test_path", type=str, default='.data/test.txt', help="Test data path")
-parser.add_argument("--output_tree", type=str, default='.data/output_tree.txt', help="Output tree path")
-parser.add_argument("--output_path", type=str, default='.data/output.txt', help="Output path")
+parser.add_argument("--train_path", type=str, default='train.txt', help="Train data path")
+parser.add_argument("--test_path", type=str, default='test.txt', help="Test data path")
+parser.add_argument("--output_tree", type=str, default='output_tree.txt', help="Output tree path")
+parser.add_argument("--output_path", type=str, default='output.txt', help="Output path")
 
 # testing
 parser.add_argument("--k", type=int, default=5, help="Knn argument")
@@ -33,8 +33,6 @@ testing_set, gold_labels = ut.generate_testing_data(config.test_path)
 TRAINING
 '''
 tree = dt.build_tree(training_set, attributes, target)
-# output tree to file
-ut.output_tree(dt.get_tree_representation(tree), config.output_tree)
 
 '''
 TESTING
