@@ -1,4 +1,4 @@
-import random as rd
+import utils as ut
 import math
 from collections import defaultdict
 
@@ -66,28 +66,6 @@ def attribute_choose(data, attributes, target):
     return best
 
 
-def get_values(data, attributes, attr):
-    """ generating all unique values of attribute by using set """
-    index = attributes.index(attr)
-    return set([entry[index] for entry in data])
-
-
-def get_data(data, attributes, best_attr, val):
-    """ generating new data set according to the best attribute and his value """
-    new_data = []
-    index = attributes.index(best_attr)
-
-    for entry in data:
-        if entry[index] == val:
-            new_entry = []
-            for i, value in enumerate(entry):
-                # skip the column of best attribute
-                if i != index:
-                    new_entry.append(value)
-            new_data.append(tuple(new_entry))
-    return new_data
-
-
 class DecisionTree(object):
     def __init__(self, decision=None, value=None, is_leaf=False):
         self.is_leaf = is_leaf
@@ -96,7 +74,7 @@ class DecisionTree(object):
         self.value = value
 
 
-def print_tree(tree, depth=0):
+def get_tree_representation(tree, depth=0):
     """ printing the tree recursively """
     if tree.is_leaf:
         return tree.value
@@ -107,10 +85,10 @@ def print_tree(tree, depth=0):
     for value, sub_tree in sorted_items:
         if sub_tree.is_leaf:
             sub_tree_repr = '{}{}{}={}:{}'.format('\t' * depth, '|' * (depth > 0), tree.decision, value,
-                                                  print_tree(sub_tree, depth + 1))
+                                                  get_tree_representation(sub_tree, depth + 1))
         else:
             sub_tree_repr = '{}{}{}={}\n{}'.format('\t' * depth, '|' * (depth > 0), tree.decision, value,
-                                                   print_tree(sub_tree, depth + 1))
+                                                   get_tree_representation(sub_tree, depth + 1))
         reprs.append(sub_tree_repr)
     return '\n'.join(reprs)
 
@@ -132,9 +110,9 @@ def build_tree(data, attributes, target):
         # generate new decision root
         tree = DecisionTree(decision=best_attr)
         # iterate over each value of best attribute
-        for val in get_values(data, attributes, best_attr):
+        for val in ut.get_values(data, attributes, best_attr):
             # generate new data
-            new_data = get_data(data, attributes, best_attr, val)
+            new_data = ut.get_data(data, attributes, best_attr, val)
             # generate clone of attributes
             new_attributes = attributes.copy()
             # remove best attribute from attributes
@@ -143,7 +121,6 @@ def build_tree(data, attributes, target):
             sub_tree = build_tree(new_data, new_attributes, target)
             # assign decision output of the value in tree's decisions map
             tree.decisions[val] = sub_tree
-
     return tree
 
 
@@ -158,52 +135,3 @@ def predict(example, attributes, tree):
     value = example[attributes.index(decision)]
     # calling the function recursively with the decisions branch according to the value
     return predict(example, attributes, tree.decisions[value])
-
-
-def calculate_accuracy(predictions, gold_labels):
-    """ calculating the accuracy of the predictions """
-    correct = 0.
-
-    for prediction, gold_label in zip(predictions, gold_labels):
-        if prediction == gold_label:
-            correct += 1
-
-    print('accuracy is: {}'.format(correct / len(predictions)))
-    return correct / len(predictions)
-
-
-def main():
-    training_set = []
-    with open('.data/train.txt') as f:
-        attributes = f.readline().split()
-        for line in f.readlines():
-            training_set.append(tuple(line.split()))
-    target = attributes[-1]
-
-    testing_set = []
-    gold_labels = []
-    with open('.data/test.txt') as f:
-        for line in f.readlines()[1:]:
-            values = line.split()
-            testing_set.append(tuple(values[:-1]))
-            gold_labels.append(values[-1])
-    '''
-    TRAINING
-    '''
-    rd.shuffle(training_set)
-    tree = build_tree(training_set, attributes, target)
-    print(print_tree(tree))
-
-    '''
-    TESTING
-    '''
-    predictions = []
-    for example in testing_set:
-        prediction = predict(example, attributes, tree)
-        predictions.append(prediction)
-
-    accuracy = calculate_accuracy(predictions, gold_labels)
-
-
-if __name__ == "__main__":
-    main()
