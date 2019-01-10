@@ -114,7 +114,7 @@ def build_tree(data, attributes, target):
             # generate new data
             new_data = ut.get_data(data, attributes, best_attr, val)
             # generate clone of attributes
-            new_attributes = attributes.copy()
+            new_attributes = list(attributes)
             # remove best attribute from attributes
             new_attributes.remove(best_attr)
             # call the function recursively with new data set and new attributes
