@@ -3,7 +3,7 @@
 python3 test.py
 ```
 
-## Contributors
+## Contributor
 ```
 title     = {Supervised Learning on AI models}
 authors    = {Alex Kartun}
