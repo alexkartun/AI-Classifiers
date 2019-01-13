@@ -244,6 +244,7 @@ def build_tree(data, attributes, target, possible_values):
             # assign decision output of the value in tree's decisions map
             tree.decisions[val] = sub_tree
 
+        # iterate over all other values of best attribute that don't appear in data set
         for val in best_attr_possible_values - best_attr_values:
             tree.decisions[val] = DecisionTree(value=default, is_leaf=True)
     return tree
