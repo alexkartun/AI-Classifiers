@@ -23,4 +23,4 @@ Num	DT	KNN	naiveBase
 22	yes	yes	yes
 23	no	no	no
 24	yes	yes	yes
-	0.88	0.88	0.84
+	0.88	0.88	0.83

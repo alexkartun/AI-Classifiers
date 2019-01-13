@@ -11,6 +11,7 @@ output_tree_path = 'output_tree.txt'
 output_path = 'output.txt'
 k = 5
 
+default_positive = 'yes'
 
 """
 UTILS
@@ -42,6 +43,18 @@ def generate_testing_data(test_file_path):
     return testing_set, gold_labels
 
 
+def extract_positive_target(data):
+    """ generate positive value of this specific data set """
+
+    if data[0][-1] == 'true' or data[0][-1] == 'false':
+        positive_target = 'true'
+    elif data[0][-1] == '1' or data[0][-1] == '0':
+        positive_target = '1'
+    else:
+        positive_target = 'yes'
+    return positive_target
+
+
 def get_data(data, attributes, best_attr, val):
     """ generating new data set according to the best attribute and his value """
     new_data = []
@@ -64,6 +77,17 @@ def get_values(data, attributes, attr):
     return set([entry[index] for entry in data])
 
 
+def get_all_possible_values(data, attributes):
+    """ generate of all possible values of each attribute """
+    possible_values = defaultdict(set)
+
+    for entry in data:
+        for index, value in enumerate(entry[:-1]):
+            possible_values[attributes[index]].add(value)
+
+    return possible_values
+
+
 def generate_attributes_vocabulary(data, attributes):
     vocab = defaultdict(set)
 
@@ -82,7 +106,7 @@ def calculate_accuracy(predictions, gold_labels):
         if prediction == gold_label:
             correct += 1
 
-    accuracy = math.ceil(correct / len(predictions) * 100) / 100
+    accuracy = round(correct / len(predictions), 2)
     return accuracy
 
 
@@ -111,7 +135,7 @@ Decision Tree
 """
 
 
-def major_class(data, attributes, target):
+def major_class(data, attributes, target, positive_target):
     """ calculating major class from data by taking the most frequent """
     freq = defaultdict(int)
     index = attributes.index(target)
@@ -119,7 +143,8 @@ def major_class(data, attributes, target):
     for entry in data:
         freq[entry[index]] += 1
 
-    frequent_class = max(freq.items(), key=lambda item: item[1])[0]
+    # calculating max frequent class for breaking the tie will be taken positive target
+    frequent_class = max(freq.items(), key=lambda item: (item[1], item[0] == positive_target))[0]
 
     return frequent_class
 
@@ -182,17 +207,6 @@ class DecisionTree(object):
         self.value = value
 
 
-def get_get_possible_values(data, attributes):
-    """ generate of all possible values of each attribute """
-    possible_values = defaultdict(set)
-
-    for entry in data:
-        for index, value in enumerate(entry[:-1]):
-            possible_values[attributes[index]].add(value)
-
-    return possible_values
-
-
 def get_tree_representation(tree, depth=0):
     """ printing the tree recursively """
     if tree.is_leaf:
@@ -212,10 +226,10 @@ def get_tree_representation(tree, depth=0):
     return '\n'.join(reprs)
 
 
-def build_tree(data, attributes, target, possible_values):
+def build_tree(data, attributes, target, possible_values, positive_target):
     """ building the decision tree by id3 algorithm """
     values = [entry[attributes.index(target)] for entry in data]
-    default = major_class(data, attributes, target)
+    default = major_class(data, attributes, target, positive_target)
 
     # data is empty or in attributes remained only the target attribute
     if not data or len(attributes) == 1:
@@ -240,7 +254,7 @@ def build_tree(data, attributes, target, possible_values):
             # remove best attribute from attributes
             new_attributes.remove(best_attr)
             # call the function recursively with new data set and new attributes
-            sub_tree = build_tree(new_data, new_attributes, target, possible_values)
+            sub_tree = build_tree(new_data, new_attributes, target, possible_values, positive_target)
             # assign decision output of the value in tree's decisions map
             tree.decisions[val] = sub_tree
 
@@ -277,21 +291,23 @@ def hamming_distance(test_example, training_example):
 def predict_knn(test_example, training_set, k):
     """ predicting the output by knn algorithm """
     distances = []
-    # calculate distances for each example in train
-    for train_example in training_set:
-        distances.append((train_example[-1], hamming_distance(test_example, train_example[:-1])))
-    # sort the list of tuples (key, distance) by second value in ascending order
-    sorted_distances = sorted(distances, key=lambda item: item[1])
+    # calculate distances for each example in train and save as tuple (index, target, hamming)
+    for index, train_example in enumerate(training_set):
+        distances.append((index, train_example[-1], hamming_distance(test_example, train_example[:-1])))
+    # sort the list of tuples (key, distance) by second value in ascending order and break tie by their input index
+    sorted_distances = sorted(distances, key=lambda item: (item[2], item[0]))
+
     # get top k rows from the sorted array
     targets = [target for i, target in enumerate(sorted_distances) if i < k]
 
     # calculate frequency of each class in targets
     freq = defaultdict(int)
 
+    # generate frequencies of each of the targets
     for target in targets:
-        freq[target] += 1
+        freq[target[1]] += 1
     # get the most frequent class of these rows
-    frequent_class = max(freq.items(), key=lambda item: item[1])[0][0]
+    frequent_class = max(freq.items(), key=lambda item: item[1])[0]
     return frequent_class
 
 
@@ -327,7 +343,7 @@ def predict_nb(example, training_set, attributes, target):
             new_data_set = [entry for entry in training_set if entry[index] == attribute]
             # calculate prob + smoothing
             prob *= (calculate_freq(new_data_set, attributes, target, value) + 1) / \
-                    (prior_class_frequencies[value] + len(attr_vocab[attribute]))
+                    (prior_class_frequencies[value] + len(attr_vocab[attributes[index]]))
         probabilities.append((value, prob))
 
     max_prob_class = max(probabilities, key=lambda item: item[1])[0]
@@ -341,13 +357,14 @@ DATA
 
 training_set, attributes, target = generate_training_data(train_path)
 testing_set, gold_labels = generate_testing_data(test_path)
-possible_values = get_get_possible_values(training_set, attributes)
+possible_values = get_all_possible_values(training_set, attributes)
+positive_target = extract_positive_target(training_set)
 
 '''
 TRAINING
 '''
 
-tree = build_tree(training_set, attributes, target, possible_values)
+tree = build_tree(training_set, attributes, target, possible_values, positive_target)
 
 '''
 TESTING
