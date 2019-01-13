@@ -11,7 +11,6 @@ output_tree_path = 'output_tree.txt'
 output_path = 'output.txt'
 k = 5
 
-default_positive = 'yes'
 
 """
 UTILS
