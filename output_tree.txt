@@ -19,4 +19,6 @@ sex=male
 	|pclass=3rd
 		|age=adult:no
 		|age=child:no
-	|pclass=crew:no
+	|pclass=crew
+		|age=adult:no
+		|age=child:no

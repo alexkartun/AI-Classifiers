@@ -182,6 +182,17 @@ class DecisionTree(object):
         self.value = value
 
 
+def get_get_possible_values(data, attributes):
+    """ generate of all possible values of each attribute """
+    possible_values = defaultdict(set)
+
+    for entry in data:
+        for index, value in enumerate(entry[:-1]):
+            possible_values[attributes[index]].add(value)
+
+    return possible_values
+
+
 def get_tree_representation(tree, depth=0):
     """ printing the tree recursively """
     if tree.is_leaf:
@@ -201,7 +212,7 @@ def get_tree_representation(tree, depth=0):
     return '\n'.join(reprs)
 
 
-def build_tree(data, attributes, target):
+def build_tree(data, attributes, target, possible_values):
     """ building the decision tree by id3 algorithm """
     values = [entry[attributes.index(target)] for entry in data]
     default = major_class(data, attributes, target)
@@ -218,12 +229,10 @@ def build_tree(data, attributes, target):
         # generate new decision root
         tree = DecisionTree(decision=best_attr)
 
-        # pruning the tree, if exists only one value to best attribute so return major class
-        if len(get_values(data, attributes, best_attr)) == 1:
-            return DecisionTree(value=default, is_leaf=True)
-
+        best_attr_values = get_values(data, attributes, best_attr)
+        best_attr_possible_values = possible_values.get(best_attr)
         # iterate over each value of best attribute
-        for val in get_values(data, attributes, best_attr):
+        for val in best_attr_values:
             # generate new data
             new_data = get_data(data, attributes, best_attr, val)
             # generate clone of attributes
@@ -231,9 +240,12 @@ def build_tree(data, attributes, target):
             # remove best attribute from attributes
             new_attributes.remove(best_attr)
             # call the function recursively with new data set and new attributes
-            sub_tree = build_tree(new_data, new_attributes, target)
+            sub_tree = build_tree(new_data, new_attributes, target, possible_values)
             # assign decision output of the value in tree's decisions map
             tree.decisions[val] = sub_tree
+
+        for val in best_attr_possible_values - best_attr_values:
+            tree.decisions[val] = DecisionTree(value=default, is_leaf=True)
     return tree
 
 
@@ -328,13 +340,13 @@ DATA
 
 training_set, attributes, target = generate_training_data(train_path)
 testing_set, gold_labels = generate_testing_data(test_path)
+possible_values = get_get_possible_values(training_set, attributes)
 
 '''
 TRAINING
 '''
 
-
-tree = build_tree(training_set, attributes, target)
+tree = build_tree(training_set, attributes, target, possible_values)
 
 '''
 TESTING
