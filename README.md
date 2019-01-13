@@ -1,6 +1,6 @@
 ## Train and test on AI models
 ```bash
-python3 test.py
+python3 py_ex2.py
 ```
 ## Dependencies
 * python 3.6+
