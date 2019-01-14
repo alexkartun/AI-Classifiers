@@ -105,7 +105,7 @@ def calculate_accuracy(predictions, gold_labels):
         if prediction == gold_label:
             correct += 1
 
-    accuracy = round(correct / len(predictions), 2)
+    accuracy = math.ceil(correct / len(predictions) * 100) / 100
     return accuracy
 
 
