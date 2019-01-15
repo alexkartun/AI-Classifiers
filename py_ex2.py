@@ -18,7 +18,7 @@ UTILS
 
 
 def generate_training_data(training_file_path):
-    """ generating train set, attributes list and target attribute """
+    """ generating train set examples, attributes list and target attribute """
     training_set = []
     with open(training_file_path) as f:
         attributes = f.readline().split()
@@ -30,11 +30,12 @@ def generate_training_data(training_file_path):
 
 
 def generate_testing_data(test_file_path):
-    """ generating testing set and gold labels """
+    """ generating testing set of examples and gold labels """
     testing_set = []
     gold_labels = []
     with open(test_file_path) as f:
-        for line in f.readlines()[1:]:
+        _ = f.readline().split()
+        for line in f.readlines():
             values = line.split()
             testing_set.append(tuple(values[:-1]))
             gold_labels.append(values[-1])
@@ -76,25 +77,16 @@ def get_values(data, attributes, attr):
     return set([entry[index] for entry in data])
 
 
-def get_all_possible_values(data, attributes):
-    """ generate of all possible values of each attribute """
+def generate_attributes_vocabulary(data, attributes):
+    """ generating vocabulary of all possible attribute's values"""
     possible_values = defaultdict(set)
 
-    for entry in data:
-        for index, value in enumerate(entry[:-1]):
-            possible_values[attributes[index]].add(value)
+    for example in data:
+        # skipping label values
+        for attribute_index, value in enumerate(example[:-1]):
+            possible_values[attributes[attribute_index]].add(value)
 
     return possible_values
-
-
-def generate_attributes_vocabulary(data, attributes):
-    vocab = defaultdict(set)
-
-    for example in data:
-        for attribute_index, value in enumerate(example[:-1]):
-            vocab[attributes[attribute_index]].add(value)
-
-    return vocab
 
 
 def calculate_accuracy(predictions, gold_labels):
@@ -199,6 +191,7 @@ def attribute_choose(data, attributes, target):
 
 
 class DecisionTree(object):
+    """ Decision tree object """
     def __init__(self, decision=None, value=None, is_leaf=False):
         self.is_leaf = is_leaf
         self.decisions = {}
@@ -212,7 +205,7 @@ def get_tree_representation(tree, depth=0):
         return tree.value
     reprs = []
     items = tree.decisions.items()
-    # sort the decisions in alphabetic manner by their decision value
+    # sort the decisions in alphabetic order by their decision value
     sorted_items = sorted(items, key=lambda item: item[0])
     for value, sub_tree in sorted_items:
         if sub_tree.is_leaf:
@@ -305,7 +298,7 @@ def predict_knn(test_example, training_set, k):
     # generate frequencies of each of the targets
     for target in targets:
         freq[target[1]] += 1
-    # get the most frequent class of these rows
+    # get the most frequent class of these rows evaluating by frequencies
     frequent_class = max(freq.items(), key=lambda item: item[1])[0]
     return frequent_class
 
@@ -344,7 +337,7 @@ def predict_nb(example, training_set, attributes, target):
             prob *= (calculate_freq(new_data_set, attributes, target, value) + 1) / \
                     (prior_class_frequencies[value] + len(attr_vocab[attributes[index]]))
         probabilities.append((value, prob))
-
+    # getting the max class evaluating by probability
     max_prob_class = max(probabilities, key=lambda item: item[1])[0]
     return max_prob_class
 
@@ -356,7 +349,7 @@ DATA
 
 training_set, attributes, target = generate_training_data(train_path)
 testing_set, gold_labels = generate_testing_data(test_path)
-possible_values = get_all_possible_values(training_set, attributes)
+possible_values = generate_attributes_vocabulary(training_set, attributes)
 positive_target = extract_positive_target(training_set)
 
 '''
